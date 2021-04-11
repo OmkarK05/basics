@@ -15,27 +15,32 @@ app.get("/comments", (req, res) => {
   res.status(201).send(comments);
 });
 
-app.post("/posts/:id/comment", (req, res) => {
+app.post("/posts/:id/comment", async (req, res) => {
   let id = req.params.id;
   let commentId = randomBytes(4).toString("hex");
   comments[id] = comments[id] || [];
-  console.log(comments[id]);
-  comments[id].push({ id: commentId, content: req["body"]["content"] });
+  let content = req["body"]["content"];
+  comments[id].push({ id: commentId, content });
 
-  axios.post("http://localhost:4005/events", {
+  let response = await axios.post("http://localhost:4003/events", {
     type: "CommentCreated",
     data: {
       id: commentId,
       content,
-      postId: req.params.id,
+      postId: id,
     },
   });
 
-  console.log(comments);
+  console.log(response);
 
-  res
-    .status(201)
-    .send({ comment: { id: commentId, content: req["body"]["content"] } });
+  if (response.status === 200) {
+    res.status(200).send({
+      comment: { id: commentId, content },
+      postId: id,
+    });
+  } else {
+    res.status(400).send("Error");
+  }
 });
 
 app.post("/events", (req, res) => {
@@ -43,5 +48,5 @@ app.post("/events", (req, res) => {
 });
 
 app.listen(4002, () => {
-  console.log("listening at port 4001");
+  console.log("listening at port 4002");
 });
